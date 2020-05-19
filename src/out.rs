@@ -103,7 +103,7 @@ impl<W: Write> Serializable<W> for Text {
         test_suites_results: &HashMap<String, HashMap<String, AnonymousTestResult>>,
         breakdown: bool,
     ) -> Result<(), BenchError> {
-        let mut header = vec!["Test", "Implementation", "Ratio", "Median", "RSD"];
+        let mut header = vec!["Test", "Implementation", "Ratio", "Median", "RSD", "Mean"];
         if breakdown {
             header.push("Function");
             header.push("Percentage");
@@ -119,6 +119,7 @@ impl<W: Write> Serializable<W> for Text {
                     }
                     _ => 0.0,
                 };
+                let exec_time = anonymous_test_result.grand_summary.mean;
                 let rsd = match anonymous_test_result.grand_summary.mean {
                     mean if mean > 0.0 => {
                         anonymous_test_result.grand_summary.std_dev * 100.0 / mean
@@ -128,12 +129,14 @@ impl<W: Write> Serializable<W> for Text {
                 let ratio = format!("{}", ratio);
                 let median = format!("{}", anonymous_test_result.grand_summary.median);
                 let rsd = format!("{}", rsd);
+                let exec_time = format!("{}", exec_time);
                 let mut line = vec![
                     test_name.to_owned(),
                     test_suite_name.to_owned(),
                     ratio,
                     median,
                     rsd,
+                    exec_time
                 ];
                 if breakdown {
                     line.push("".to_owned());
@@ -153,6 +156,7 @@ impl<W: Write> Serializable<W> for Text {
                         let name = &body_summary.name;
                         let pct = body_summary.summary.median * 100.0 / bodies_median_sum;
                         let line = vec![
+                            "".to_owned(),
                             "".to_owned(),
                             "".to_owned(),
                             "".to_owned(),
@@ -212,7 +216,7 @@ impl<W: Write> Serializable<W> for CSV {
                 }
             }
         } else {
-            writer.write_all(b"Test\tImplementation\tRatio\tMedian\tRSD\n")?;
+            writer.write_all(b"Test\tImplementation\tRatio\tMedian\tRSD\tMean\n")?;
             for (test_name, test_suite) in into_sorted(test_suites_results) {
                 let mut ref_mean = None;
                 for (test_suite_name, anonymous_test_result) in test_suite {
@@ -231,12 +235,13 @@ impl<W: Write> Serializable<W> for CSV {
                     };
                     writer.write_all(
                         format!(
-                            "{}\t{}\t{}\t{}\t{}\n",
+                            "{}\t{}\t{}\t{}\t{}\t{}\n",
                             test_name,
                             test_suite_name,
                             ratio,
                             anonymous_test_result.grand_summary.median,
-                            rsd
+                            rsd,
+                            anonymous_test_result.grand_summary.mean,
                         )
                         .as_bytes(),
                     )?;
