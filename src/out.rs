@@ -136,7 +136,7 @@ impl<W: Write> Serializable<W> for Text {
                     ratio,
                     median,
                     rsd,
-                    exec_time
+                    exec_time,
                 ];
                 if breakdown {
                     line.push("".to_owned());
